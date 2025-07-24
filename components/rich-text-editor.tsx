@@ -11,14 +11,17 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
+import { Node } from '@tiptap/core';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useState, useMemo } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import * as LucideIcons from 'lucide-react';
 import {
   Bold,
   Italic,
@@ -42,7 +45,146 @@ import {
   Plus,
   Minus,
   Settings,
+  Search,
 } from 'lucide-react';
+
+interface IconOptions {
+  iconName: string;
+  iconColor?: string | null;
+  iconSize?: string | null;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    customIcon: {
+      insertIcon: (options: IconOptions) => ReturnType;
+    };
+  }
+}
+
+const IconExtension = Node.create({
+  name: 'customIcon',
+  group: 'inline',
+  inline: true,
+  atom: true,
+
+  addAttributes() {
+    return {
+      iconName: {
+        default: null,
+      },
+      iconColor: {
+        default: null,
+      },
+      iconSize: {
+        default: '16',
+      },
+    };
+  },
+
+  // parseHTML() {
+  //   return [
+  //     {
+  //       tag: 'span[data-icon]',
+  //     },
+  //   ];
+  // },
+  parseHTML() {
+    return [
+      {
+        tag: 'span[data-icon]',
+        getAttrs: (dom) => {
+          const element = dom as HTMLElement;
+          return {
+            iconName: element.getAttribute('data-icon'),
+            iconColor: element.getAttribute('data-color'),
+            iconSize: element.getAttribute('data-size') || '16',
+          };
+        },
+      },
+    ];
+  },
+  // renderHTML({ HTMLAttributes }) {
+  //   return [
+  //     'span',
+  //     {
+  //       'data-icon': HTMLAttributes.iconName,
+  //       'data-color': HTMLAttributes.iconColor,
+  //       'data-size': HTMLAttributes.iconSize,
+  //       style: `color: ${HTMLAttributes.iconColor || 'currentColor'}; display: inline-flex; align-items: center;`,
+  //       class: 'inline-icon',
+  //     },
+  //     `[${HTMLAttributes.iconName || 'icon'}]`,
+  //   ];
+  // },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'span',
+      {
+        'data-icon': HTMLAttributes.iconName,
+        'data-color': HTMLAttributes.iconColor,
+        'data-size': HTMLAttributes.iconSize,
+        style: `color: ${HTMLAttributes.iconColor || 'currentColor'}; display: inline-flex; align-items: center;`,
+        class: 'inline-icon',
+      },
+      `[${HTMLAttributes.iconName}]`, // Always show the icon name, no fallback to 'icon'
+    ];
+  },
+  addCommands() {
+    return {
+      insertIcon: (options: IconOptions) => ({ commands }) => {
+        return commands.insertContent({
+          type: this.name,
+          attrs: options,
+        });
+      },
+    };
+  },
+});
+
+const mostUsefulIcons = [
+  'BarChart2',
+  'Code',
+  'Code2',
+  'DownloadCloud',
+  'Eye',
+  'FileVideo',
+  'FileDown',
+  'FlaskConical',
+  'Hexagon',
+  'Key',
+  'Layers',
+  'LayoutDashboard',
+  'LucideBarChartHorizontalBig',
+  'Maximize',
+  'Minimize',
+  'Moon',
+  'Settings',
+  'Sun',
+  'Package',
+  'Pencil',
+  'PieChart',
+  'Power',
+  'Puzzle',
+  'ShieldCheck',
+  'ShipWheel',
+  'Star',
+  'Scroll',
+  'Trash',
+  'UploadCloud',
+  'Users',
+];
+
+const iconColors = [
+  { name: 'Purple', value: '#7700ff' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Rose', value: '#f43f5e' },
+];
 
 interface RichTextEditorProps {
   content: string;
@@ -53,13 +195,32 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [deleteTableDialog, setDeleteTableDialog] = useState(false);
   const [tableWidth, setTableWidth] = useState([100]);
   const [tableHeight, setTableHeight] = useState([200]);
-  
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [selectedIconColor, setSelectedIconColor] = useState('');
+  const [iconSearchQuery, setIconSearchQuery] = useState('');
+
+  const filteredIcons = useMemo(() => {
+    if (!iconSearchQuery.trim()) {
+      return mostUsefulIcons;
+    }
+
+    const query = iconSearchQuery.toLowerCase();
+    return mostUsefulIcons.filter(iconName =>
+      iconName.toLowerCase().includes(query) ||
+      iconName.replace(/([A-Z])/g, ' $1').trim().toLowerCase().includes(query)
+    );
+  }, [iconSearchQuery]);
+
   const colors = [
-    { name: 'Purple', value: '#8b5cf6' },
+    { name: 'Purple', value: '#7700ff' },
     { name: 'Red', value: '#ef4444' },
     { name: 'Green', value: '#22c55e' },
     { name: 'Yellow', value: '#eab308' },
     { name: 'Blue', value: '#3b82f6' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Lime', value: '#84cc16' },
   ];
 
   const editor = useEditor({
@@ -95,6 +256,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       }),
       TextStyle,
       Color,
+      IconExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -156,26 +318,20 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const addLink = () => {
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('Enter URL:', previousUrl);
-    
-    // cancelled
-    if (url === null) {
-      return;
-    }
 
-    // empty
+    if (url === null) return;
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
 
-    // update link
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
   const addTable = () => {
     const rows = parseInt(window.prompt('Enter number of rows:', '3') || '3');
     const cols = parseInt(window.prompt('Enter number of columns:', '3') || '3');
-    
+
     if (rows > 0 && cols > 0) {
       editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
     }
@@ -213,6 +369,16 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     editor.chain().focus().deleteRow().run();
   };
 
+  const insertIcon = (iconName: string) => {
+    editor.chain().focus().insertIcon({
+      iconName,
+      iconColor: selectedIconColor || 'currentColor',
+      iconSize: '16',
+    }).run();
+    setIconPickerOpen(false);
+    setIconSearchQuery('');
+  };
+
   const setTextColor = (color: string) => {
     editor.chain().focus().setColor(color).run();
   };
@@ -222,7 +388,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   };
 
   const updateTableSize = () => {
-    const table = editor.view.dom.querySelector('table');
+    const table = editor.view.dom.querySelector('table') as HTMLTableElement;
     if (table) {
       table.style.width = `${tableWidth[0]}%`;
       table.style.height = `${tableHeight[0]}px`;
@@ -259,9 +425,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         >
           <Heading3 className="h-4 w-4" />
         </Button>
-        
+
         <Separator orientation="vertical" className="h-6" />
-        
+
         <Button
           type="button"
           variant="ghost"
@@ -289,9 +455,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         >
           <Code className="h-4 w-4" />
         </Button>
-        
+
         <Separator orientation="vertical" className="h-6" />
-        
+
         <Button
           type="button"
           variant="ghost"
@@ -319,9 +485,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         >
           <Quote className="h-4 w-4" />
         </Button>
-        
+
         <Separator orientation="vertical" className="h-6" />
-        
+
         <Button
           type="button"
           variant="ghost"
@@ -358,9 +524,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         >
           <AlignJustify className="h-4 w-4" />
         </Button>
-        
+
         <Separator orientation="vertical" className="h-6" />
-        
+
         <Button type="button" variant="ghost" size="sm" onClick={addLink}>
           <LinkIcon className="h-4 w-4" />
         </Button>
@@ -370,7 +536,90 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         <Button type="button" variant="ghost" size="sm" onClick={addTable}>
           <TableIcon className="h-4 w-4" />
         </Button>
-        
+
+        <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" title="Insert Icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="start">
+            <div className="p-3 border-b">
+              <h4 className="font-medium text-sm mb-2">Insert Icon</h4>
+              <div className="relative mb-3">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search icons..."
+                  value={iconSearchQuery}
+                  onChange={(e) => setIconSearchQuery(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Icon Color</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant={selectedIconColor === '' ? 'default' : 'outline'}
+                    size="sm"
+                    className="text-xs px-2 py-1 h-6"
+                    onClick={() => setSelectedIconColor('')}
+                  >
+                    Default
+                  </Button>
+                  {iconColors.map((color) => (
+                    <Button
+                      key={color.value}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={`h-6 w-6 p-0 rounded-full border-2 ${selectedIconColor === color.value ? 'border-foreground' : 'border-transparent'
+                        } hover:border-muted-foreground`}
+                      style={{ backgroundColor: color.value }}
+                      onClick={() => setSelectedIconColor(color.value)}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-6 gap-1 p-3 max-h-64 overflow-y-auto">
+              {filteredIcons.length > 0 ? (
+                filteredIcons.map((iconName) => {
+                  const IconComponent = (LucideIcons as any)[iconName];
+                  if (!IconComponent) return null;
+
+                  return (
+                    <Button
+                      key={iconName}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-12 w-12 p-0 hover:bg-accent flex flex-col items-center justify-center gap-1"
+                      onClick={() => insertIcon(iconName)}
+                      title={iconName}
+                    >
+                      <IconComponent
+                        className="h-4 w-4"
+                        style={{ color: selectedIconColor || 'currentColor' }}
+                      />
+                      <span className="text-xs truncate w-full text-center">
+                        {iconName.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </Button>
+                  );
+                })
+              ) : (
+                <div className="col-span-6 text-center py-8 text-muted-foreground">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No icons found</p>
+                  <p className="text-xs">Try a different search term</p>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {editor.isActive('table') && (
           <Popover>
             <PopoverTrigger asChild>
@@ -394,7 +643,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     <span className="text-sm text-muted-foreground w-12">{tableWidth[0]}%</span>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Table Height (px)</Label>
                   <div className="flex items-center space-x-3">
@@ -409,7 +658,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     <span className="text-sm text-muted-foreground w-16">{tableHeight[0]}px</span>
                   </div>
                 </div>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -419,9 +668,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                 >
                   Apply Size
                 </Button>
-                
+
                 <Separator />
-                
+
                 <div>
                   <h4 className="font-medium text-sm mb-2">Columns</h4>
                   <div className="flex gap-1">
@@ -455,7 +704,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium text-sm mb-2">Rows</h4>
                   <div className="flex gap-1">
@@ -489,9 +738,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <Button
                   type="button"
                   variant="destructive"
@@ -506,9 +755,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
             </PopoverContent>
           </Popover>
         )}
-        
+
         <Separator orientation="vertical" className="h-6" />
-        
+
         <Popover>
           <PopoverTrigger asChild>
             <Button type="button" variant="ghost" size="sm">
@@ -545,9 +794,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           </PopoverContent>
         </Popover>
       </div>
-      
+
       <EditorContent editor={editor} />
-      
+
       <ConfirmDialog
         open={deleteTableDialog}
         onOpenChange={setDeleteTableDialog}

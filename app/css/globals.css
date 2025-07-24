@@ -253,3 +253,22 @@
 .dark .prose code {
   background-color: hsl(var(--muted));
 }
+
+/* Custom icon styles in rich text editor */
+.prose .inline-icon {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+.prose .inline-icon::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}

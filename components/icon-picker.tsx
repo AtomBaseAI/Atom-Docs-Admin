@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { X, Palette } from 'lucide-react';
+import { X, Palette, Search } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 interface IconPickerProps {
@@ -50,20 +51,38 @@ const mostUsefulIcons = [
 ];
 
 const iconColors = [
-  { name: 'Purple', value: '#8b5cf6', class: 'text-purple-500' },
+  { name: 'Purple', value: '#7700ff', class: 'text-purple-500' },
   { name: 'Red', value: '#ef4444', class: 'text-red-500' },
   { name: 'Green', value: '#22c55e', class: 'text-green-500' },
   { name: 'Blue', value: '#3b82f6', class: 'text-blue-500' },
   { name: 'Yellow', value: '#eab308', class: 'text-yellow-500' },
+  { name: 'Orange', value: '#f97316', class: 'text-orange-500' },
+  { name: 'Cyan', value: '#06b6d4', class: 'text-cyan-500' },
+  { name: 'Rose', value: '#f43f5e', class: 'text-rose-500' },
+  { name: 'Lime', value: '#84cc16', class: 'text-lime-500' },
 ];
 
 export function IconPicker({ selectedIcon, selectedColor, onIconSelect, onColorSelect }: IconPickerProps) {
   const [open, setOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredIcons = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return mostUsefulIcons;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return mostUsefulIcons.filter(iconName => 
+      iconName.toLowerCase().includes(query) ||
+      iconName.replace(/([A-Z])/g, ' $1').trim().toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   const handleIconSelect = (iconName: string) => {
     onIconSelect(iconName);
     setOpen(false);
+    setSearchQuery('');
   };
 
   const handleColorSelect = (color: string) => {
@@ -74,6 +93,7 @@ export function IconPicker({ selectedIcon, selectedColor, onIconSelect, onColorS
   const clearIcon = () => {
     onIconSelect('');
     onColorSelect('');
+    setSearchQuery('');
   };
 
   const SelectedIcon = selectedIcon && (LucideIcons as any)[selectedIcon]
@@ -108,29 +128,47 @@ export function IconPicker({ selectedIcon, selectedColor, onIconSelect, onColorS
           <PopoverContent className="w-80 p-0" align="start">
             <div className="p-3 border-b">
               <h4 className="font-medium text-sm">Choose an icon</h4>
-              <p className="text-xs text-muted-foreground">Select from our most useful icons</p>
+              <p className="text-xs text-muted-foreground mb-3">Select from our most useful icons</p>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search icons..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-5 gap-1 p-3">
-              {mostUsefulIcons.map((iconName) => {
-                const IconComponent = (LucideIcons as any)[iconName];
-                if (!IconComponent) return null;
+            <div className="grid grid-cols-5 gap-1 p-3 max-h-64 overflow-y-auto">
+              {filteredIcons.length > 0 ? (
+                filteredIcons
+                  .filter((iconName) => (LucideIcons as any)[iconName])
+                  .map((iconName) => {
+                  const IconComponent = (LucideIcons as any)[iconName];
 
-                return (
-                  <Button
-                    key={iconName}
-                    variant="ghost"
-                    size="sm"
-                    className="h-12 w-12 p-0 hover:bg-accent flex flex-col items-center justify-center gap-1"
-                    onClick={() => handleIconSelect(iconName)}
-                    title={iconName}
-                  >
-                    <IconComponent className="h-5 w-5" />
-                    <span className="text-xs truncate w-full text-center">
-                      {iconName.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                  </Button>
-                );
-              })}
+                  return (
+                    <Button
+                      key={iconName}
+                      variant="ghost"
+                      size="sm"
+                      className="h-12 w-12 p-0 hover:bg-accent flex flex-col items-center justify-center gap-1"
+                      onClick={() => handleIconSelect(iconName)}
+                      title={iconName}
+                    >
+                      <IconComponent className="h-5 w-5" />
+                      <span className="text-xs truncate w-full text-center">
+                        {iconName.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </Button>
+                  );
+                })
+              ) : (
+                <div className="col-span-5 text-center py-8 text-muted-foreground">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No icons found</p>
+                  <p className="text-xs">Try a different search term</p>
+                </div>
+              )}
             </div>
           </PopoverContent>
         </Popover>

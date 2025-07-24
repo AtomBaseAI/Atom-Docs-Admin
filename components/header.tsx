@@ -43,7 +43,7 @@ export function Header({ isEditMode }: HeaderProps) {
           <SearchDialog />
 
           {isEditMode && (
-            <Button asChild variant="outline" size="sm" className="glass-button">
+            <Button asChild variant="outline" size="sm" className="glass-button shadow-md dark:shadow-none">
               <Link href="/admin">
                 <Settings className="h-4 w-4 mr-2" />
                 Admin
