@@ -9,7 +9,6 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-
 .dark .glass-header {
   background: rgba(0, 0, 0, 0.8);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -76,8 +75,6 @@
   }
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -134,8 +131,6 @@
     --chart-5: 340 75% 55%;
   }
 }
-
-
 
 @layer base {
   * {
@@ -263,7 +258,7 @@
 }
 
 .prose .inline-icon::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 1em;
   height: 1em;
@@ -271,4 +266,72 @@
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+}
+
+/* Image alignment styles for rich text editor */
+.editor-image {
+  border-radius: 0.5rem;
+  max-width: 100%;
+  height: auto;
+}
+
+.image-align-left {
+  float: left;
+  margin: 0.5rem 1rem 0.5rem 0;
+  clear: left;
+}
+
+.image-align-right {
+  float: right;
+  margin: 0.5rem 0 0.5rem 1rem;
+  clear: right;
+}
+
+.image-align-center {
+  display: block;
+  margin: 1rem auto;
+  clear: both;
+}
+
+/* Ensure text flows around floated images */
+.prose .image-align-left + p,
+.prose .image-align-right + p {
+  margin-top: 0;
+}
+
+/* Clear floats after images */
+.prose .image-align-left::after,
+.prose .image-align-right::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Default size image alignment styles */
+.editor-image[data-use-default-size="true"].image-align-left {
+  float: none;
+  display: block;
+  margin: 1rem 0 1rem 0;
+}
+
+.editor-image[data-use-default-size="true"].image-align-right {
+  float: none;
+  display: block;
+  margin: 1rem 0 1rem auto;
+}
+
+.editor-image[data-use-default-size="true"].image-align-center {
+  display: block;
+  margin: 1rem auto;
+}
+
+/* Responsive image behavior */
+@media (max-width: 768px) {
+  .image-align-left:not([data-use-default-size="true"]),
+  .image-align-right:not([data-use-default-size="true"]) {
+    float: none !important;
+    display: block;
+    margin: 1rem auto !important;
+    clear: both !important;
+  }
 }

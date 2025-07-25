@@ -127,30 +127,65 @@ const PageLink = memo(
         </Link>
       )
     }
-
     return (
-      <Link
-        href={`/docs/${page.slug}`}
-        className={cn(
-          "flex items-center gap-2 p-2 rounded-lg text-sm transition-all duration-300 ease-in-out",
-          "glass-hover",
-          isActive
-            ? "glass shadow-lg dark:shadow-none bg-primary/10 border border-primary/20 text-primary"
-            : "hover:bg-accent/50 hover:text-accent-foreground",
-        )}
-      >
-        <IconComponent
-          className={cn(
-            "h-3 w-3 flex-shrink-0 transition-colors duration-300",
-            isActive ? "text-primary" : "text-muted-foreground",
-          )}
-          style={{ color: isActive ? undefined : page.iconColor || "currentColor" }}
-        />
-        <span className="truncate">{page.title}</span>
-      </Link>
+      <>
+        {
+          isActive ? (
+            <div className={`group relative dark:bg-[#000]/50  text-base font-bold rounded-md overflow-hidden transform transition-all duration-500  before:absolute before:w-16 before:h-full before:content[''] before:left-0 before:top-0 before:z-10 before:bg-[${page.iconColor}] before:rounded-full before:blur-2xl border border-transparent  shadow-lg dark:shadow-none`}>
+              <Link
+                href={`/docs/${page.slug}`}
+                className={cn(
+                  "flex items-center gap-2 p-2 text-sm transition-all duration-300 ease-in-out inset-0.5 z-[1] opacity-90 rounded-md dark:bg-[#323132] bg-[#fff]"
+                )}
+              >
+                <IconComponent
+                  className={cn(
+                    "h-5 w-5 flex-shrink-0 transition-colors duration-300 text-primary",
+                  )}
+                  style={{ color: page.iconColor }}
+                />
+                <span className="truncate">{page.title}</span>
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href={`/docs/${page.slug}`}
+              className={cn(
+                "flex items-center gap-2 p-2 rounded-lg text-sm transition-all duration-300 ease-in-out",
+                "glass-hover hover:bg-accent/50 hover:text-accent-foreground",
+              )}
+            >
+              <IconComponent
+                className={cn(
+                  "h-5 w-5 flex-shrink-0 transition-colors duration-300 text-muted-foreground",
+                )}
+                style={{ color: page.iconColor }}
+              />
+              <span className="truncate">{page.title}</span>
+            </Link>
+          )
+        }
+      </>
     )
   },
 )
+// <div className="relative h-full w-full overflow-hidden rounded-md bg-[f5f5f7] dark:bg-[#3d3c3d] drop-shadow-xl group shadow-lg dark:shadow-none ">
+//   <Link
+//     href={`/docs/${page.slug}`}
+//     className={cn(
+//       "flex items-center gap-2 p-2 text-sm transition-all duration-300 ease-in-out inset-0.5 z-[1] opacity-90 rounded-md dark:bg-[#323132]"
+//     )}
+//   >
+//     <IconComponent
+//       className={cn(
+//         "h-3 w-3 flex-shrink-0 transition-colors duration-300 text-primary",
+//       )}
+//       style={{ color: page.iconColor }}
+//     />
+//     <span className="truncate">{page.title}</span>
+//   </Link>
+//   <div className={`absolute transition-all duration-500 top-1/2 -left-1/2 group-hover:top-10 group-hover:-left-1/4 h-4 w-10 -z-10 bg-${page.iconColor} blur-[30px]`} />
+// </div>
 
 PageLink.displayName = "PageLink"
 
