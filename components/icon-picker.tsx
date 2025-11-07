@@ -19,6 +19,7 @@ interface IconPickerProps {
 // 20 most useful icons for documentation
 const mostUsefulIcons = [
   'TriangleAlert',
+  'Ban',
   'BarChart2',
   'Book',
   'Brain',
