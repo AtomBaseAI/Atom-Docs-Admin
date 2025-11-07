@@ -226,6 +226,7 @@ const ButtonExtension = Node.create({
 
 const mostUsefulIcons = [
   "TriangleAlert",
+  "Ban",
   "BarChart2",
   "Book",
   "Brain",
