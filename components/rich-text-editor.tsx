@@ -1,5 +1,6 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
@@ -18,6 +19,7 @@ import { Separator } from "@/components/ui/separator"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useMemo } from "react"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import * as LucideIcons from "lucide-react"
@@ -31,9 +33,6 @@ import {
   LinkIcon,
   ImageIcon,
   TableIcon,
-  Heading1,
-  Heading2,
-  Heading3,
   Palette,
   AlignLeft,
   AlignCenter,
@@ -45,6 +44,8 @@ import {
   Settings,
   SquarePlus,
   Search,
+  Maximize,
+  Minimize,
 } from "lucide-react"
 
 declare module "@tiptap/core" {
@@ -214,12 +215,12 @@ const ButtonExtension = Node.create({
     return {
       insertButton:
         (options: any) =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          })
-        },
+          ({ commands }) => {
+            return commands.insertContent({
+              type: this.name,
+              attrs: options,
+            })
+          },
     }
   },
 })
@@ -309,6 +310,7 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
+  const { theme } = useTheme()
   const [deleteTableDialog, setDeleteTableDialog] = useState(false)
   const [tableWidth, setTableWidth] = useState([100])
   const [tableHeight, setTableHeight] = useState([200])
@@ -334,6 +336,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     hasShadow: true,
   })
   const [iconSearchQuery, setIconSearchQuery] = useState("")
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [headingLevel, setHeadingLevel] = useState<string>("paragraph")
 
   const filteredIcons = useMemo(() => {
     if (!iconSearchQuery.trim()) {
@@ -631,6 +635,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
+    onTransaction: ({ editor }) => {
+      updateHeadingLevel()
+    },
     editorProps: {
       attributes: {
         class: "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4",
@@ -881,36 +888,54 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     }
   }
 
+  // Handle heading selection
+  const handleHeadingChange = (level: string) => {
+    if (level === "paragraph") {
+      // Remove heading formatting
+      editor.chain().focus().setParagraph().run()
+      setHeadingLevel("paragraph")
+    } else {
+      const levelNum = parseInt(level) as 1 | 2 | 3;
+      editor.chain().focus().toggleHeading({ level: levelNum }).run()
+      setHeadingLevel(level)
+    }
+  }
+
+  // Update heading level state based on editor state
+  const updateHeadingLevel = () => {
+    if (editor.isActive("heading", { level: 1 })) {
+      setHeadingLevel("1")
+    } else if (editor.isActive("heading", { level: 2 })) {
+      setHeadingLevel("2")
+    } else if (editor.isActive("heading", { level: 3 })) {
+      setHeadingLevel("3")
+    } else {
+      setHeadingLevel("paragraph")
+    }
+  }
+
   return (
-    <div className="border rounded-lg">
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-muted/50">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive("heading", { level: 1 }) ? "bg-accent" : ""}
-        >
-          <Heading1 className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive("heading", { level: 2 }) ? "bg-accent" : ""}
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editor.isActive("heading", { level: 3 }) ? "bg-accent" : ""}
-        >
-          <Heading3 className="h-4 w-4" />
-        </Button>
+    <div className={`border rounded-lg transition-all duration-200 ${isFullscreen
+        ? `fixed inset-0 z-50 w-screen h-screen max-h-none border-none rounded-none ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+        }`
+        : ''
+      }`}>
+      <div className={`flex flex-wrap items-center gap-1 p-2 border-b bg-muted/50 transition-all duration-200 ${isFullscreen
+          ? `sticky top-0 z-10 border-b shadow-md ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+          }`
+          : ''
+        }`}>
+        <Select value={headingLevel} onValueChange={handleHeadingChange}>
+          <SelectTrigger className="w-16 h-8">
+            <span className="font-bold">H</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="paragraph">P</SelectItem>
+            <SelectItem value="1">H1</SelectItem>
+            <SelectItem value="2">H2</SelectItem>
+            <SelectItem value="3">H3</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Separator orientation="vertical" className="h-6" />
 
@@ -1163,7 +1188,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                           }}
                           className="rounded"
                           onError={(e) => {
-                            ;(e.target as HTMLImageElement).style.display = "none"
+                            ; (e.target as HTMLImageElement).style.display = "none"
                           }}
                         />
                       </div>
@@ -1342,11 +1367,10 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${
-                                buttonConfig.backgroundColor === color.value
+                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${buttonConfig.backgroundColor === color.value
                                   ? "border-foreground"
                                   : "border-transparent"
-                              }`}
+                                }`}
                               style={{ backgroundColor: color.value }}
                               onClick={() => setButtonConfig((prev) => ({ ...prev, backgroundColor: color.value }))}
                               title={color.name}
@@ -1364,9 +1388,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${
-                                buttonConfig.textColor === color.value ? "border-foreground" : "border-transparent"
-                              }`}
+                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${buttonConfig.textColor === color.value ? "border-foreground" : "border-transparent"
+                                }`}
                               style={{ backgroundColor: color.value }}
                               onClick={() => setButtonConfig((prev) => ({ ...prev, textColor: color.value }))}
                               title={color.name}
@@ -1384,9 +1407,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${
-                                buttonConfig.borderColor === color.value ? "border-foreground" : "border-transparent"
-                              }`}
+                              className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${buttonConfig.borderColor === color.value ? "border-foreground" : "border-transparent"
+                                }`}
                               style={{ backgroundColor: color.value }}
                               onClick={() => setButtonConfig((prev) => ({ ...prev, borderColor: color.value }))}
                               title={color.name}
@@ -1405,9 +1427,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${
-                                  buttonConfig.iconColor === color.value ? "border-foreground" : "border-transparent"
-                                }`}
+                                className={`h-8 w-8 p-0 rounded-full border-2 hover:border-muted-foreground ${buttonConfig.iconColor === color.value ? "border-foreground" : "border-transparent"
+                                  }`}
                                 style={{ backgroundColor: color.value }}
                                 onClick={() => setButtonConfig((prev) => ({ ...prev, iconColor: color.value }))}
                                 title={color.name}
@@ -1765,9 +1786,28 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
             </div>
           </PopoverContent>
         </Popover>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+        >
+          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
       </div>
 
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        className={`prose prose-sm max-w-none ${isFullscreen
+            ? `h-[calc(100vh-60px)] overflow-y-auto p-4 ${theme === 'dark' ? 'prose-invert bg-gray-900' : 'bg-white'
+            }`
+            : 'min-h-[200px] p-4'
+          }`}
+      />
 
       <ConfirmDialog
         open={deleteTableDialog}
